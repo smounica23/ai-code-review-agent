@@ -11,7 +11,7 @@ on:
 jobs:
   ai-code-review:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,22 +24,22 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install requests ruff bandit
+        run: pip install requests
 
       - name: Get changed files
         id: changed-files
         run: |
           git diff --name-only origin/${{ github.base_ref }}...HEAD | \
           grep -E '\.(py|java|js)$' > changed_files.txt || true
+          echo "Changed files:"
           cat changed_files.txt
 
       - name: Run AI Code Review
         env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           REVIEW_API_URL: ${{ secrets.REVIEW_API_URL }}
-        run: |
-          python scripts/github_review.py changed_files.txt
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python scripts/github_review.py changed_files.txt
 
       - name: Post review comment
         if: always()
@@ -47,21 +47,44 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            if (fs.existsSync('review_results.json')) {
-              const results = JSON.parse(fs.readFileSync('review_results.json'));
-              let comment = '## 🔍 AI Code Review Results\n\n';
-              comment += `**Overall Score:** ${results.overall_score}/10\n\n`;
-              if (results.critical_count > 0) {
-                comment += `> ⛔ **${results.critical_count} critical issue(s) found — please fix before merging**\n\n`;
-              }
-              results.issues.slice(0, 5).forEach(issue => {
-                const icon = issue.severity === 'CRITICAL' ? '🔴' : issue.severity === 'HIGH' ? '🟠' : '🟡';
-                comment += `${icon} **[${issue.severity}]** ${issue.description} *(Line ${issue.line_start})*\n\n`;
-              });
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
+            if (!fs.existsSync('review_results.json')) return;
+            
+            const r = JSON.parse(fs.readFileSync('review_results.json'));
+            const icon = r.critical_count > 0 ? '⛔' : '✅';
+            
+            let comment = `## 🔍 AI Code Review Results\n\n`;
+            comment += `**Overall Score:** ${r.overall_score}/10\n\n`;
+            
+            if (r.jira_ticket_id) {
+              comment += `**Jira Ticket:** ${r.jira_ticket_id}\n`;
+              comment += `**Alignment Score:** ${r.alignment_score}/10\n\n`;
+            }
+            
+            if (r.critical_count > 0) {
+              comment += `> ${icon} **${r.critical_count} critical issue(s) found — fix before merging**\n\n`;
+            } else {
+              comment += `> ${icon} **No critical issues found**\n\n`;
+            }
+            
+            if (r.issues && r.issues.length > 0) {
+              comment += `### Issues Found\n`;
+              const icons = {CRITICAL:'🔴', HIGH:'🟠', MEDIUM:'🟡', LOW:'🟢'};
+              r.issues.slice(0, 5).forEach(issue => {
+                const i = icons[issue.severity] || '⚪';
+                comment += `${i} **[${issue.severity}]** ${issue.description} *(Line ${issue.line_start})*\n\n`;
               });
             }
+            
+            if (r.alignment_issues && r.alignment_issues.length > 0) {
+              comment += `### ⚠️ Jira Requirements Not Met\n`;
+              r.alignment_issues.slice(0, 5).forEach(issue => {
+                comment += `• ${issue}\n`;
+              });
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
