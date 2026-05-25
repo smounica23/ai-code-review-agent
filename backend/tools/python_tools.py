@@ -1,4 +1,5 @@
 import tempfile
+import shutil
 import subprocess
 import json
 import os
@@ -7,8 +8,8 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 VENV_SCRIPTS = os.path.join(BASE_DIR, "..", "venv", "Scripts")
 
-ruff_path = os.path.join(VENV_SCRIPTS, "ruff.exe")
-bandit_path = os.path.join(VENV_SCRIPTS, "bandit.exe")
+ruff_path = shutil.which("ruff") or "ruff"
+bandit_path = shutil.which("bandit") or "bandit"
 
 def run_python_static_analysis(code: str) -> list[dict]:
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
