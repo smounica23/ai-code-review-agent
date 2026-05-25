@@ -20,3 +20,4 @@ class AgentState(TypedDict) :
     jira_ticket: Optional[dict]
     alignment_issues: list
     alignment_score: float
+    code_suggestions: list

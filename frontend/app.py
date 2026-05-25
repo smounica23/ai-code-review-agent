@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-API_URL = "http://localhost:8000/api/v1"
+API_URL = "https://ai-code-review-agent-production-cee9.up.railway.app/api/v1"
 
 st.set_page_config(page_title="AI Code Review Agent", layout="wide")
 st.title("🔍 AI Code Review Agent")
@@ -88,6 +88,16 @@ if "review" in st.session_state:
             st.warning("**Missing or incomplete requirements:**")
             for issue in r["alignment_issues"]:
                 st.write(f"• {issue}")
+    if r.get("code_suggestions"):
+        st.divider()
+        st.subheader("💡 Suggested Implementations")
+        for suggestion in r.get("code_suggestions", []):
+            with st.expander(f"📝 {suggestion.get('requirement', '')[:80]}"):
+                st.caption(suggestion.get("explanation", ""))
+                if suggestion.get("suggested_code"):
+                    st.code(suggestion["suggested_code"], language=r.get("language", "python"))
+                if suggestion.get("imports_needed"):
+                    st.caption("Imports needed: " + ", ".join(suggestion.get("imports_needed", [])))
 
     # follow-up Q&A
     st.divider()

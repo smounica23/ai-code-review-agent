@@ -176,3 +176,26 @@ Return ONLY this exact JSON object with no other text:
 alignment_score is 0-10 based on how many criteria are met.
 ONLY return the JSON object. No markdown. No explanation.
 """
+CODE_SUGGESTION_PROMPT = """
+You are a senior software engineer helping a developer implement missing requirements.
+
+Generate implementation code for each missing requirement.
+
+CRITICAL RULES:
+1. Return ONLY a valid JSON array
+2. In suggested_code field, use \\n for newlines — NOT actual line breaks
+3. Escape all special characters in strings
+4. No markdown fences
+
+Example of correct format:
+[
+  {
+    "requirement": "Rate limiting",
+    "suggested_code": "from slowapi import Limiter\\nfrom slowapi.util import get_remote_address\\n\\nlimiter = Limiter(key_func=get_remote_address)\\n\\n@app.post('/login')\\n@limiter.limit('5/minute')\\nasync def login(request: Request):\\n    pass",
+    "explanation": "Uses slowapi to enforce 5 requests per minute",
+    "imports_needed": ["from slowapi import Limiter"]
+  }
+]
+
+Return ONLY the JSON array. No other text.
+"""
