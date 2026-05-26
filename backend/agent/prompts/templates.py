@@ -179,23 +179,27 @@ ONLY return the JSON object. No markdown. No explanation.
 CODE_SUGGESTION_PROMPT = """
 You are a senior software engineer helping a developer implement missing requirements.
 
-Generate implementation code for each missing requirement.
+Generate COMPLETE, WORKING implementation code for each missing requirement.
+Do NOT use 'pass' as a placeholder. Write the actual implementation.
 
-CRITICAL RULES:
-1. Return ONLY a valid JSON array
-2. In suggested_code field, use \\n for newlines — NOT actual line breaks
-3. Escape all special characters in strings
-4. No markdown fences
+For example, if the requirement is 'POST /login endpoint':
+- Write the complete endpoint with actual logic
+- Include error handling
+- Include all necessary code, not just the skeleton
 
-Example of correct format:
+Return ONLY a JSON array:
 [
   {
-    "requirement": "Rate limiting",
-    "suggested_code": "from slowapi import Limiter\\nfrom slowapi.util import get_remote_address\\n\\nlimiter = Limiter(key_func=get_remote_address)\\n\\n@app.post('/login')\\n@limiter.limit('5/minute')\\nasync def login(request: Request):\\n    pass",
-    "explanation": "Uses slowapi to enforce 5 requests per minute",
-    "imports_needed": ["from slowapi import Limiter"]
+    "requirement": "Rate limiting to 5 attempts per minute",
+    "suggested_code": "from slowapi import Limiter\\nfrom slowapi.util import get_remote_address\\n\\nlimiter = Limiter(key_func=get_remote_address)\\n\\n@app.post('/login')\\n@limiter.limit('5/minute')\\nasync def login(request: Request, login_request: LoginRequest):\\n    user = db.query(User).filter(User.email == login_request.email).first()\\n    if not user or not bcrypt.checkpw(login_request.password.encode(), user.hashed_password):\\n        raise HTTPException(status_code=401, detail='Invalid credentials')\\n    token = jwt.encode({'user': login_request.email, 'exp': datetime.utcnow() + timedelta(hours=24)}, SECRET_KEY)\\n    return {'token': token}",
+    "explanation": "Complete login endpoint with rate limiting, bcrypt password check, and JWT token generation",
+    "imports_needed": ["from slowapi import Limiter", "import bcrypt", "import jwt"]
   }
 ]
 
-Return ONLY the JSON array. No other text.
+Rules:
+1. suggested_code must be COMPLETE working code — no pass, no placeholders
+2. Use \\n for newlines — NOT actual line breaks
+3. Include actual logic, not just structure
+4. No markdown. ONLY the JSON array.
 """
