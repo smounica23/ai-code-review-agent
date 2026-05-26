@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
+import os
 
-API_URL = "https://ai-code-review-agent-production-cee9.up.railway.app/api/v1"
+API_URL = os.getenv("API_URL", "https://ai-code-review-agent-production-cee9.up.railway.app/api/v1")
 
 st.set_page_config(page_title="AI Code Review Agent", layout="wide")
 st.title("🔍 AI Code Review Agent")
