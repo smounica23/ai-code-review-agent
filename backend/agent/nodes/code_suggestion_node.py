@@ -7,7 +7,7 @@ import json
 
 
 def code_suggestion_node(state:AgentState) -> dict:
-    if not state["alignment_issues"] or not state["jira_ticket"]:
+    if not state["alignment_issues"] or not state.get("jira_ticket"):
         return {"code_suggestions": []}
     
     llm = get_llm()

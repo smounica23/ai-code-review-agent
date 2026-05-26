@@ -6,7 +6,7 @@ from services.json_utils import extract_json
 
 
 def requirement_alignment_node(state:AgentState)->dict:
-    if not state["jira_ticket_id"]:
+    if not state.get("jira_ticket"):
        return {"alignment_issues": [], "alignment_score": 0.0}
     llm = get_llm()
     messages = [
