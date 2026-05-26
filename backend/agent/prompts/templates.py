@@ -179,27 +179,24 @@ ONLY return the JSON object. No markdown. No explanation.
 CODE_SUGGESTION_PROMPT = """
 You are a senior software engineer helping a developer implement missing requirements.
 
-Generate COMPLETE, WORKING implementation code for each missing requirement.
-Do NOT use 'pass' as a placeholder. Write the actual implementation.
-
-For example, if the requirement is 'POST /login endpoint':
-- Write the complete endpoint with actual logic
-- Include error handling
-- Include all necessary code, not just the skeleton
-
-Return ONLY a JSON array:
-[
-  {
-    "requirement": "Rate limiting to 5 attempts per minute",
-    "suggested_code": "from slowapi import Limiter\\nfrom slowapi.util import get_remote_address\\n\\nlimiter = Limiter(key_func=get_remote_address)\\n\\n@app.post('/login')\\n@limiter.limit('5/minute')\\nasync def login(request: Request, login_request: LoginRequest):\\n    user = db.query(User).filter(User.email == login_request.email).first()\\n    if not user or not bcrypt.checkpw(login_request.password.encode(), user.hashed_password):\\n        raise HTTPException(status_code=401, detail='Invalid credentials')\\n    token = jwt.encode({'user': login_request.email, 'exp': datetime.utcnow() + timedelta(hours=24)}, SECRET_KEY)\\n    return {'token': token}",
-    "explanation": "Complete login endpoint with rate limiting, bcrypt password check, and JWT token generation",
-    "imports_needed": ["from slowapi import Limiter", "import bcrypt", "import jwt"]
-  }
-]
+Generate COMPLETE, PRODUCTION-READY implementation code for each missing requirement.
 
 Rules:
-1. suggested_code must be COMPLETE working code — no pass, no placeholders
-2. Use \\n for newlines — NOT actual line breaks
-3. Include actual logic, not just structure
-4. No markdown. ONLY the JSON array.
+1. No 'pass' placeholders — write actual working logic
+2. Include database lookup, password verification, error handling
+3. Use environment variables for secrets — never hardcode
+4. Use \\n for newlines — NOT actual line breaks
+5. Each snippet must be self-contained and runnable
+6. No markdown. ONLY the JSON array.
+
+Example of COMPLETE code for login with JWT:
+{
+  "requirement": "Login endpoint with JWT",
+  "suggested_code": "from fastapi import FastAPI, HTTPException, Depends\\nfrom pydantic import BaseModel, EmailStr\\nfrom sqlalchemy.orm import Session\\nimport bcrypt\\nimport jwt\\nimport os\\nfrom datetime import datetime, timedelta\\n\\nSECRET_KEY = os.getenv('SECRET_KEY', 'change-me')\\n\\nclass LoginRequest(BaseModel):\\n    email: EmailStr\\n    password: str\\n\\n@app.post('/login')\\nasync def login(request: LoginRequest, db: Session = Depends(get_db)):\\n    user = db.query(User).filter(User.email == request.email).first()\\n    if not user:\\n        raise HTTPException(status_code=401, detail='Invalid credentials')\\n    if not bcrypt.checkpw(request.password.encode(), user.hashed_password):\\n        raise HTTPException(status_code=401, detail='Invalid credentials')\\n    token = jwt.encode(\\n        {'email': user.email, 'exp': datetime.utcnow() + timedelta(hours=24)},\\n        SECRET_KEY,\\n        algorithm='HS256'\\n    )\\n    return {'token': token, 'expires_in': '24h'}",
+  "explanation": "Complete login with DB lookup, bcrypt verification, JWT generation and 401 for invalid credentials",
+  "imports_needed": ["import bcrypt", "import jwt", "from pydantic import EmailStr"]
+}
+
+Now generate similar COMPLETE code for each missing requirement below.
+Return ONLY a JSON array. No markdown. No preamble.
 """
