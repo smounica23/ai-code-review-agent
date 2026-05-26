@@ -12,6 +12,7 @@ from agent.nodes.summary_node import summary_node
 from agent.nodes.requirement_alignment_node import requirement_alignment_node
 from agent.nodes.jira_fetch_node import jira_fetch_node
 from agent.nodes.code_suggestion_node import code_suggestion_node
+from agent.nodes.logic_review_node import logic_review_node
 
 def should_retry(state: AgentState) -> str:
     if state.get("quality_score", 10) < 6 and state.get("retry_count", 0) < 2:
@@ -28,6 +29,7 @@ def build_workflow():
     graph.add_node("summary_node",summary_node )
     graph.add_node("best_practices_node", best_practices_node)
     graph.add_node("jira_fetch_node", jira_fetch_node)
+    graph.add_node("logic_review_node", logic_review_node)
     graph.add_node("requirement_alignment_node",requirement_alignment_node)
     graph.add_node("code_suggestion_node",code_suggestion_node)
     graph.add_node("critic_node", critic_node)
@@ -41,7 +43,8 @@ def build_workflow():
     graph.add_edge("security_node","performance_node")
     graph.add_edge("performance_node","best_practices_node")
     graph.add_edge("best_practices_node","jira_fetch_node")
-    graph.add_edge("jira_fetch_node","requirement_alignment_node")
+    graph.add_edge("jira_fetch_node","logic_review_node")
+    graph.add_edge("logic_review_node","requirement_alignment_node")
     graph.add_edge("requirement_alignment_node","code_suggestion_node")
     graph.add_edge("code_suggestion_node","fix_suggestion_node")
     graph.add_edge("fix_suggestion_node", "critic_node")

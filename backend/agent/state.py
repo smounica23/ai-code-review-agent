@@ -21,3 +21,4 @@ class AgentState(TypedDict) :
     alignment_issues: list
     alignment_score: float
     code_suggestions: list
+    logic_issues: list

@@ -61,5 +61,6 @@ def post_review(request: ReviewRequest,
     "low_count": sum(1 for i in result["all_issues"] if i.get("severity") == "LOW"),
     "alignment_issues": result.get("alignment_issues", []),
     "alignment_score": result.get("alignment_score", 0.0),
+    "logic_issues": result.get("logic_issues", []),
     "code_suggestions": result.get("code_suggestions", [])
 }

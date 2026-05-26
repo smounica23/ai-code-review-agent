@@ -52,7 +52,6 @@ if "review" in st.session_state:
     r = st.session_state["review"]
     stored_code = st.session_state.get("code", "")
 
-    # metrics row
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Overall Score", f"{r['overall_score']:.1f}/10")
     c2.metric("🔴 Critical", r["critical_count"])
@@ -60,11 +59,9 @@ if "review" in st.session_state:
     c4.metric("🟡 Medium", r["medium_count"])
     c5.metric("🟢 Low", r["low_count"])
 
-    # summary
     with st.expander("📝 Review Summary", expanded=True):
         st.markdown(r["summary"])
 
-    # issues
     st.subheader("Issues Found")
     severity_icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🟢"}
     severity_order = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
@@ -80,7 +77,6 @@ if "review" in st.session_state:
             if issue.get("fix_suggestion"):
                 st.code(issue["fix_suggestion"], language=r.get("language", "python"))
 
-    # jira alignment section
     if r.get("alignment_score") is not None and r.get("alignment_issues"):
         st.divider()
         st.subheader("📋 Jira Requirement Alignment")
@@ -99,8 +95,17 @@ if "review" in st.session_state:
                     st.code(suggestion["suggested_code"], language=r.get("language", "python"))
                 if suggestion.get("imports_needed"):
                     st.caption("Imports needed: " + ", ".join(suggestion.get("imports_needed", [])))
+    if r.get("logic_issues"):
+        st.divider()
+        st.subheader("🧠 Logic Issues")
+        for issue in r.get("logic_issues", []):
+            icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🟢"}.get(issue.get("severity"), "⚪")
+            with st.expander(f"{icon} [{issue.get('severity')}] {issue.get('description', '')[:80]}"):
+                st.caption(f"Lines: {issue.get('line_start')} - {issue.get('line_end')}")
+                st.caption(f"Type: {issue.get('type', 'logic_error')}")
+                if issue.get("fix_suggestion"):
+                    st.code(issue["fix_suggestion"], language=r.get("language", "python"))
 
-    # follow-up Q&A
     st.divider()
     st.subheader("💬 Ask a Follow-up Question")
     if "history" not in st.session_state:

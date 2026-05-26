@@ -5,14 +5,15 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from services.json_utils import extract_json
 import json
 
-def fix_suggestion_node(state:AgentState) -> dict:
+def fix_suggestion_node(state: AgentState) -> dict:
     print("Fix Suggestion node running...")
     llm = get_llm()
+
     high_issues = [
-        i for i in state["security_issues"] + state["performance_issues"]
+        i for i in state["security_issues"] + state["performance_issues"] + state.get("logic_issues", [])
         if i.get("severity") in ("CRITICAL", "HIGH")
     ]
-    context = "\n".join(state["retrieved_context"][:3])
+
     messages = [
         SystemMessage(content=FIX_SUGGESTION_SYSTEM_PROMPT),
         HumanMessage(content=f"""
@@ -27,9 +28,22 @@ Code:
 Return ONLY a JSON array with fix suggestions.
 """)
     ]
+
     response = invoke_llm(llm, messages, "fix_suggestion_node")
-    try:
-        suggestions = extract_json(response.content)
-    except json.JSONDecodeError:
-        suggestions = []
-    return {"fix_suggestions": suggestions}
+    fixes = extract_json(response.content, default=[])
+
+    all_issues = (
+        state["security_issues"] +
+        state["performance_issues"] +
+        state["best_practice_issues"] +
+        state.get("logic_issues", []) +
+        state["static_issues"]
+    )
+
+    for issue in all_issues:
+        for fix in fixes:
+            if fix.get("rule_id") == issue.get("rule_id"):
+                issue["fix_suggestion"] = fix.get("fix_code", "")
+                break
+
+    return {"all_issues": all_issues}

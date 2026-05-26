@@ -200,3 +200,54 @@ Example of COMPLETE code for login with JWT:
 Now generate similar COMPLETE code for each missing requirement below.
 Return ONLY a JSON array. No markdown. No preamble.
 """
+
+LOGIC_REVIEW_PROMPT = """
+You are a senior software engineer reviewing code for logical correctness.
+
+You will be given:
+- The code to review
+- Optionally: a Jira ticket description with requirements
+
+Review the code for TWO things:
+
+1. PURE LOGIC ERRORS:
+- Incorrect conditionals (wrong operators, inverted logic)
+- Missing edge case handling (None, empty, negative values)
+- Functions that don't do what their name suggests
+- Incorrect return values
+- Unreachable code paths
+- Off-by-one errors in loops
+- Missing null checks before accessing attributes
+
+2. LOGIC vs JIRA TICKET (only if ticket provided):
+- Does the code logic match what the ticket describes?
+- Example: ticket says return 401 for invalid credentials but code returns 200
+- Example: ticket says hash password but code stores plain text
+- Example: ticket says validate email but no validation exists
+
+Return ONLY a JSON array:
+[
+  {
+    "rule_id": "LOGIC001",
+    "description": "Code returns True even when user is not found — should return False or raise exception",
+    "line_start": 5,
+    "line_end": 7,
+    "category": "logic",
+    "severity": "HIGH",
+    "source": "llm",
+    "type": "logic_error"
+  },
+  {
+    "rule_id": "LOGIC002",
+    "description": "Ticket requires 401 for invalid credentials but code returns 200",
+    "line_start": 8,
+    "line_end": 10,
+    "category": "logic",
+    "severity": "CRITICAL",
+    "source": "llm",
+    "type": "jira_mismatch"
+  }
+]
+
+No markdown. No preamble. ONLY the JSON array.
+"""
