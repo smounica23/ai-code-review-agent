@@ -48,40 +48,77 @@ jobs:
           script: |
             const fs = require('fs');
             if (!fs.existsSync('review_results.json')) return;
-            
+
             const r = JSON.parse(fs.readFileSync('review_results.json'));
             const icon = r.critical_count > 0 ? '⛔' : '✅';
-            
+
             let comment = `## 🔍 AI Code Review Results\n\n`;
             comment += `**Overall Score:** ${r.overall_score}/10\n\n`;
-            
+
             if (r.jira_ticket_id) {
               comment += `**Jira Ticket:** ${r.jira_ticket_id}\n`;
               comment += `**Alignment Score:** ${r.alignment_score}/10\n\n`;
             }
-            
+
             if (r.critical_count > 0) {
               comment += `> ${icon} **${r.critical_count} critical issue(s) found — fix before merging**\n\n`;
             } else {
               comment += `> ${icon} **No critical issues found**\n\n`;
             }
-            
+
             if (r.issues && r.issues.length > 0) {
-              comment += `### Issues Found\n`;
+              comment += `### 🐛 Issues Found\n`;
               const icons = {CRITICAL:'🔴', HIGH:'🟠', MEDIUM:'🟡', LOW:'🟢'};
               r.issues.slice(0, 5).forEach(issue => {
                 const i = icons[issue.severity] || '⚪';
                 comment += `${i} **[${issue.severity}]** ${issue.description} *(Line ${issue.line_start})*\n\n`;
               });
+              if (r.issues.length > 5) {
+                comment += `> ...and ${r.issues.length - 5} more issues\n\n`;
+              }
             }
-            
+
+            if (r.logic_issues && r.logic_issues.length > 0) {
+              comment += `\n### 🧠 Logic Issues\n`;
+              const icons = {CRITICAL:'🔴', HIGH:'🟠', MEDIUM:'🟡', LOW:'🟢'};
+              r.logic_issues.slice(0, 5).forEach(issue => {
+                const i = icons[issue.severity] || '⚪';
+                const type = issue.type === 'jira_mismatch' ? '⚡ Jira Mismatch' : '🔧 Logic Error';
+                comment += `${i} **[${issue.severity}]** ${issue.description} *(${type})*\n\n`;
+              });
+            }
+
             if (r.alignment_issues && r.alignment_issues.length > 0) {
-              comment += `### ⚠️ Jira Requirements Not Met\n`;
+              comment += `\n### ⚠️ Jira Requirements Not Met\n`;
               r.alignment_issues.slice(0, 5).forEach(issue => {
                 comment += `• ${issue}\n`;
               });
+              comment += `\n`;
             }
-            
+
+            if (r.code_suggestions && r.code_suggestions.length > 0) {
+              comment += `\n### 💡 Missing Implementations (${r.code_suggestions.length})\n`;
+              r.code_suggestions.slice(0, 3).forEach(s => {
+                comment += `📝 **${s.requirement}**\n`;
+                comment += `${s.explanation}\n\n`;
+              });
+              if (r.code_suggestions.length > 3) {
+                comment += `> ...and ${r.code_suggestions.length - 3} more suggestions\n\n`;
+              }
+              comment += `> Full code snippets available in the review UI\n\n`;
+            }
+
+            if (r.issues && r.issues.some(i => i.fix_suggestion)) {
+              comment += `\n### 🔧 Fix Suggestions Available\n`;
+              r.issues.filter(i => i.fix_suggestion).slice(0, 3).forEach(issue => {
+                comment += `• **${issue.description}** — fix suggestion included\n`;
+              });
+              comment += `\n`;
+            }
+
+            comment += `\n---\n`;
+            comment += `*Reviewed by [AI Code Review Agent](https://ai-code-review-agent-nkbztetzlmlsnbhkrdkgoz.streamlit.app)*`;
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
