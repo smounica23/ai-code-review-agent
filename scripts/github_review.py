@@ -83,6 +83,8 @@ def main():
     critical_count = 0
     alignment_issues = []
     alignment_score = 0.0
+    logic_issues = []
+    code_suggestions = [] 
     for filepath in files:
         if not os.path.exists(filepath):
             continue
@@ -93,6 +95,8 @@ def main():
             overall_score = min(overall_score, result.get("overall_score", 10.0))
             alignment_issues.extend(result.get("alignment_issues", []))
             alignment_score = result.get("alignment_score", 0.0)
+            logic_issues.extend(result.get("logic_issues", [])) 
+            code_suggestions.extend(result.get("code_suggestions", []))
 
     results = {
         "overall_score": overall_score,
@@ -100,7 +104,9 @@ def main():
         "issues": all_issues,
         "jira_ticket_id": jira_ticket_id,
         "alignment_issues": alignment_issues,  
-        "alignment_score": alignment_score
+        "alignment_score": alignment_score,
+        "logic_issues": logic_issues,
+        "code_suggestions": code_suggestions
     }
     with open("review_results.json", "w") as f:
         json.dump(results, f)
